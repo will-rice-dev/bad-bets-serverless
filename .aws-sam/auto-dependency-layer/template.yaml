@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'bad-bets-serverless
+
+  Sample SAM Template for bad-bets-serverless
+
+  '
+Globals:
+  Function:
+    Timeout: 3
+Resources:
+  Table:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: String
+  PutFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+      BuildProperties:
+        Binary: create
+      SamResourceId: PutFunction
+    Properties:
+      CodeUri: PutFunction
+      Handler: bootstrap
+      Runtime: provided.al2
+      Architectures:
+      - x86_64
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /{id}
+            Method: put
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: Table
+      Policies:
+      - DynamoDBWritePolicy:
+          TableName:
+            Ref: Table
+  GetFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+      BuildProperties:
+        Binary: get
+      SamResourceId: GetFunction
+    Properties:
+      CodeUri: GetFunction
+      Handler: bootstrap
+      Runtime: provided.al2
+      Architectures:
+      - x86_64
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /{id}
+            Method: get
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: Table
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: Table
+Outputs:
+  PutApi:
+    Description: API Gateway endpoint URL for Prod stage for Put function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/
+  PutFunction:
+    Description: Put Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - PutFunction
+      - Arn
+  PutTable:
+    Description: DynamoDB table name
+    Value:
+      Fn::GetAtt:
+      - Table
+      - Arn
